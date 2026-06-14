@@ -2,7 +2,7 @@
 
 Benchmark how different embedding models affect retrieval-augmented generation (RAG) output quality.
 coming soon:
-add llm to output actual answers with the info
+add/test llm to output actual answers with the info
 run on cloud using terraform (hetzner)
 
 ### The Problem
