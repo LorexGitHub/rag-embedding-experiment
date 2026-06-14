@@ -1,0 +1,122 @@
+[
+    {
+        "id": "q_cars_1",
+        "query": "Which German luxury automaker is headquartered in Stuttgart and produces the S-Class?",
+        "ground_truth": "Mercedes-Benz",
+        "relevant_dataset": "cars"
+    },
+    {
+        "id": "q_cars_2",
+        "query": "Which Italian automaker is known for its prancing horse logo and luxury sports cars?",
+        "ground_truth": "Ferrari",
+        "relevant_dataset": "cars"
+    },
+    {
+        "id": "q_cars_3",
+        "query": "What American electric vehicle company was founded by Elon Musk?",
+        "ground_truth": "Tesla",
+        "relevant_dataset": "cars"
+    },
+    {
+        "id": "q_cars_4",
+        "query": "Which Japanese automaker produces the Corolla, one of the best-selling cars of all time?",
+        "ground_truth": "Toyota",
+        "relevant_dataset": "cars"
+    },
+    {
+        "id": "q_cuisines_1",
+        "query": "Which cuisine is known for sushi, ramen, and tempura?",
+        "ground_truth": "Japanese",
+        "relevant_dataset": "cuisines"
+    },
+    {
+        "id": "q_cuisines_2",
+        "query": "Which cuisine is famous for pasta, pizza, and gelato?",
+        "ground_truth": "Italian",
+        "relevant_dataset": "cuisines"
+    },
+    {
+        "id": "q_cuisines_3",
+        "query": "Which cuisine is known for its use of injera bread and wat stews?",
+        "ground_truth": "Ethiopian",
+        "relevant_dataset": "cuisines"
+    },
+    {
+        "id": "q_tech_1",
+        "query": "Which company developed the iPhone and Mac computers?",
+        "ground_truth": "Apple",
+        "relevant_dataset": "tech_companies"
+    },
+    {
+        "id": "q_tech_2",
+        "query": "Which company created the Windows operating system and Azure cloud platform?",
+        "ground_truth": "Microsoft",
+        "relevant_dataset": "tech_companies"
+    },
+    {
+        "id": "q_tech_3",
+        "query": "Which company is known for its search engine, Android OS, and Tensor chips?",
+        "ground_truth": "Google",
+        "relevant_dataset": "tech_companies"
+    },
+    {
+        "id": "q_tech_4",
+        "query": "Which company dominates the GPU market for AI training and gaming?",
+        "ground_truth": "Nvidia",
+        "relevant_dataset": "tech_companies"
+    },
+    {
+        "id": "q_music_1",
+        "query": "Which genre originated in New Orleans and features improvisation, brass instruments, and swing?",
+        "ground_truth": "Jazz",
+        "relevant_dataset": "music_genres"
+    },
+    {
+        "id": "q_music_2",
+        "query": "Which genre originated in the Bronx in the 1970s and includes rapping, DJing, and breakdancing?",
+        "ground_truth": "Hip-Hop",
+        "relevant_dataset": "music_genres"
+    },
+    {
+        "id": "q_science_1",
+        "query": "Which field studies celestial objects like stars, galaxies, and black holes?",
+        "ground_truth": "Astrophysics",
+        "relevant_dataset": "science_fields"
+    },
+    {
+        "id": "q_science_2",
+        "query": "Which field focuses on the study of genes, DNA, and heredity?",
+        "ground_truth": "Genetics",
+        "relevant_dataset": "science_fields"
+    },
+    {
+        "id": "q_science_3",
+        "query": "Which field deals with the design and building of robots and automated systems?",
+        "ground_truth": "Robotics",
+        "relevant_dataset": "science_fields"
+    },
+    {
+        "id": "q_sports_1",
+        "query": "Which sport is known as 'the beautiful game' and is played with 11 players per side using a round ball?",
+        "ground_truth": "Soccer",
+        "relevant_dataset": "sports"
+    },
+    {
+        "id": "q_sports_2",
+        "query": "Which sport involves hitting a shuttlecock over a net with rackets?",
+        "ground_truth": "Soccer",
+        "relevant_dataset": "sports"
+    },
+    {
+        "id": "q_programming_1",
+        "query": "Which language is known for its use in data science, machine learning, and has a famous snake-themed name?",
+        "ground_truth": "Python",
+        "relevant_dataset": "programming_languages"
+    },
+    {
+        "id": "q_programming_2",
+        "query": "Which language is known for its ownership model, memory safety, and is used in systems programming?",
+        "ground_truth": "Rust",
+        "relevant_dataset": "programming_languages"
+    }
+]

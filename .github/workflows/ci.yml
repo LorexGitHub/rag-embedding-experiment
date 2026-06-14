@@ -1,0 +1,75 @@
+name: CI - Build and Push Docker Images
+
+# Trigger workflow for pushes and pull requests on the main branch.
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Verify Docker Hub Secrets Exist
+        run: |
+          if [ -z "${{ secrets.DOCKERHUB_USERNAME }}" ]; then
+            echo "❌ ERROR: DOCKERHUB_USERNAME is missing or empty in GitHub Secrets!"
+            exit 1
+          else
+            echo "✅ DOCKERHUB_USERNAME is present."
+          fi
+          if [ -z "${{ secrets.DOCKERHUB_TOKEN }}" ]; then
+            echo "❌ ERROR: DOCKERHUB_TOKEN is missing or empty in GitHub Secrets!"
+            exit 1
+          else
+            echo "✅ DOCKERHUB_TOKEN is present."
+          fi
+
+      # Ensure required Docker Hub credentials are available before building.
+      # This prevents a confusing login failure later in the workflow.
+      # CHANGED: Using raw CLI to log in instead of the Action
+      - name: Docker CLI Login
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Build Embedding Service
+        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/embedding-service:latest .
+
+      # Push only from main to avoid publishing images from feature branches.
+      - name: Push Embedding Service to Docker Hub
+        if: github.ref == 'refs/heads/main'
+        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/embedding-service:latest
+
+      # Build the ensemble API image that coordinates queries across all models.
+      - name: Build Ensemble API
+        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/ensemble-api:latest -f Dockerfile.ensemble .
+
+      # Push the ensemble API image only from main.
+      - name: Push Ensemble API to Docker Hub
+        if: github.ref == 'refs/heads/main'
+        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/ensemble-api:latest
+
+      # ------------------------------------------------------------------
+      # CD: Deploy to AWS EKS
+      # This section is intentionally disabled to prevent accidental cloud
+      # deployment and unexpected AWS charges during pull requests or forks.
+      # To enable it, configure the required AWS secrets and uncomment below.
+      # ------------------------------------------------------------------
+      # - name: Configure AWS Credentials
+      #   uses: aws-actions/configure-aws-credentials@v2
+      #   with:
+      #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #     aws-region: eu-central-1
+
+      # - name: Install kubectl
+      #   uses: azure/setup-kubectl@v3
+
+      # - name: Deploy to AWS EKS
+      #   run: |
+      #     aws eks update-kubeconfig --name ml-ensemble-cluster --region eu-central-1
+      #     kubectl apply -f k8s/

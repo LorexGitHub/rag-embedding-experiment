@@ -1,0 +1,16 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+RUN pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+COPY rag_requirements.txt .
+RUN pip install --no-cache-dir -r rag_requirements.txt
+
+COPY src/rag/ src/rag/
+COPY src/api/rag_api.py src/api/
+COPY data/ data/
+
+EXPOSE 8002
+
+CMD ["uvicorn", "src.api.rag_api:app", "--host", "0.0.0.0", "--port", "8002"]
