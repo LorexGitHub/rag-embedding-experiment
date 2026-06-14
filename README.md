@@ -1,10 +1,13 @@
 # RAG Embedding Experiment
 
-Benchmark how different embedding models affect retrieval-augmented generation (RAG) output quality. Run locally with Docker Compose or deploy to a Hetzner CX23 cloud server.
+Benchmark how different embedding models affect retrieval-augmented generation (RAG) output quality.
+coming soon:
+add llm to output actual answers with the info
+run on cloud using terraform (hetzner)
 
 ### The Problem
 
-Different embedding models capture different semantic nuances. A query like *"A programming language named after a snake"* might retrieve different documents depending on whether you use MiniLM, BGE, GTE, Granite, Harrier, MPNet, Qwen3, or Jina. Which model works best for your domain and dataset?
+Different embedding models capture different semantic nuances. A query like _"A programming language named after a snake"_ might retrieve different documents depending on whether you use MiniLM, BGE, GTE, Granite, Harrier, MPNet, Qwen3, or Jina. Which model works best for your domain and dataset?
 
 ### The Solution
 
@@ -13,6 +16,7 @@ A containerized RAG pipeline that runs a query through multiple embedding models
 ### Supported Embedding Models
 
 **Fast (< 100M params):**
+
 - **MiniLM-L12** — `sentence-transformers/all-MiniLM-L12-v2` (33M)
 - **BGE-Small** — `BAAI/bge-small-en-v1.5` (33M)
 - **GTE-Small** — `thenlper/gte-small` (33M)
@@ -20,10 +24,12 @@ A containerized RAG pipeline that runs a query through multiple embedding models
 - **Harrier** — `microsoft/harrier-oss-v1-270m` (270M)
 
 **Medium (100–150M params):**
+
 - **BGE-Base** — `BAAI/bge-base-en-v1.5` (110M)
 - **MPNet** — `sentence-transformers/all-mpnet-base-v2` (110M)
 
 **High-quality (300M+ params):**
+
 - **Qwen3** — `Qwen/Qwen3-Embedding-0.6B` (600M)
 - **Jina** — `jinaai/jina-embeddings-v5-text-small` (580M)
 - **BGE-Large** — `BAAI/bge-large-en-v1.5` (335M)
@@ -70,6 +76,7 @@ A containerized RAG pipeline that runs a query through multiple embedding models
 **Prerequisites**: Docker Desktop, Python 3.12+ (optional, for UI outside Docker)
 
 1. Clone and start:
+
    ```
    docker compose up --build -d
    ```
@@ -92,12 +99,12 @@ A containerized RAG pipeline that runs a query through multiple embedding models
 
 Generator selection is explicit via environment variables (no auto-detection):
 
-| Env var | Behavior |
-|---|---|
-| (none set) | `_TemplateGenerator` — returns top retrieved document |
-| `LLM_BASE_URL` | OpenAI-compatible API (e.g., vLLM, OpenAI); set `LLM_API_KEY` if needed |
-| `LLM_MODEL` or `LOCAL_LLM_MODEL` | Local HuggingFace model |
-| `LLM_USE_OLLAMA=1` | Ollama (uses `OLLAMA_BASE_URL`, default `http://localhost:11434`) |
+| Env var                          | Behavior                                                                |
+| -------------------------------- | ----------------------------------------------------------------------- |
+| (none set)                       | `_TemplateGenerator` — returns top retrieved document                   |
+| `LLM_BASE_URL`                   | OpenAI-compatible API (e.g., vLLM, OpenAI); set `LLM_API_KEY` if needed |
+| `LLM_MODEL` or `LOCAL_LLM_MODEL` | Local HuggingFace model                                                 |
+| `LLM_USE_OLLAMA=1`               | Ollama (uses `OLLAMA_BASE_URL`, default `http://localhost:11434`)       |
 
 Set these in `docker-compose.yaml` under the `rag-api` service environment.
 
@@ -115,11 +122,13 @@ Set these in `docker-compose.yaml` under the `rag-api` service environment.
 ### Cloud Deployment (Hetzner)
 
 1. Set your API token:
+
    ```
    export TF_VAR_hcloud_token="your-hcloud-api-token"
    ```
 
 2. Provision:
+
    ```
    cd infra
    terraform init
