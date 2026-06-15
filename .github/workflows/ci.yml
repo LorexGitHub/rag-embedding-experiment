@@ -6,10 +6,6 @@ on:
   pull_request:
     branches: ["main"]
 
-env:
-  DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-  DOCKER_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -26,20 +22,29 @@ jobs:
   build-and-push:
     needs: lint
     runs-on: ubuntu-latest
-    if: >
-      github.ref == 'refs/heads/main'
-      && env.DOCKER_USERNAME != ''
-      && env.DOCKER_TOKEN != ''
+    if: github.ref == 'refs/heads/main'
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Docker Login
-        run: echo "$DOCKER_TOKEN" | docker login -u "$DOCKER_USERNAME" --password-stdin
+      - name: Check secrets and login
+        env:
+          USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          if [ -z "$USERNAME" ] || [ -z "$TOKEN" ]; then
+            echo "DOCKERHUB_USERNAME or DOCKERHUB_TOKEN not set — skipping build"
+            exit 0
+          fi
+          echo "$TOKEN" | docker login -u "$USERNAME" --password-stdin
 
       - name: Build and Push Images
+        env:
+          USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        if: env.USERNAME != '' && env.TOKEN != ''
         run: |
-          docker build -t $DOCKER_USERNAME/rag-api:latest .
-          docker tag $DOCKER_USERNAME/rag-api:latest $DOCKER_USERNAME/rag-ui:latest
-          docker push $DOCKER_USERNAME/rag-api:latest
-          docker push $DOCKER_USERNAME/rag-ui:latest
+          docker build -t $USERNAME/rag-api:latest .
+          docker tag $USERNAME/rag-api:latest $USERNAME/rag-ui:latest
+          docker push $USERNAME/rag-api:latest
+          docker push $USERNAME/rag-ui:latest
