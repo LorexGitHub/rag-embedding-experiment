@@ -1,5 +1,5 @@
 from sentence_transformers import SentenceTransformer, util
-from .config import EVAL_SEMANTIC_MODEL, GENERATOR
+from .config import EVAL_SEMANTIC_MODEL
 from .schemas import EvaluationMetrics
 from .generator import get_generator, _TemplateGenerator
 

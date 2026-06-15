@@ -3,12 +3,10 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional
 import json
-from pathlib import Path
 import threading
 import queue
 
-from src.rag.experiment import run_experiment, run_batch, load_queries, load_dataset, DATA_DIR
-from src.rag.schemas import ExperimentConfig
+from src.rag.experiment import run_batch, load_queries, load_dataset, DATA_DIR
 from src.rag.config import EMBEDDING_MODELS
 from src.rag.pipeline import RAGPipeline
 
@@ -146,7 +144,6 @@ def compare_models(req: CompareRequest):
                     top_k=req.top_k,
                 )
                 results[model_name] = result.model_dump()
-            from src.rag.experiment import _pick_best
             report = {
                 "query": req.query,
                 "ground_truth": req.ground_truth,
