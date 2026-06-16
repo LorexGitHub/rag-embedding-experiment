@@ -1,11 +1,11 @@
 """Async Celery tasks for RAG pipeline"""
-import json
+import os
 from datetime import datetime
 from pathlib import Path
 from celery import Celery, Task
 from celery.exceptions import SoftTimeLimitExceeded
 
-redis_url = "redis://localhost:6379"
+redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
 celery_app = Celery("rag", broker=redis_url, backend=redis_url)
 
 celery_app.conf.update(
@@ -19,8 +19,8 @@ celery_app.conf.update(
     result_expires=86400,  # 1 day
 )
 
-RESULTS_FILE = Path("/data/results.jsonl")
-RESULTS_FILE.parent.mkdir(exist_ok=True)
+RESULTS_FILE = Path(os.getenv("RESULTS_DIR", "/data")) / "results.jsonl"
+RESULTS_FILE.parent.mkdir(parents=True, exist_ok=True)
 
 
 class RAGTask(Task):
@@ -41,7 +41,7 @@ def run_rag_task(self, job_id: str, query: str, model: str, dataset: str):
         pipeline = RAGPipeline()
         
         # Load dataset
-        from data import load_dataset  # adjust import as needed
+        from rag.experiment import load_dataset
         documents = load_dataset(dataset)
         ground_truth = "placeholder"  # Get from query config
         

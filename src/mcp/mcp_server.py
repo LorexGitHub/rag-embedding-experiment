@@ -1,21 +1,26 @@
 """MCP Server for RAG Job Management"""
 import json
 import logging
+import os
 from datetime import datetime
 from pathlib import Path
 from mcp.server import Server
-from mcp.types import Tool, Resource
+from mcp.server.sse import SseServerTransport
+from mcp.types import CallToolResult, TextContent, Tool
+from starlette.applications import Starlette
+from starlette.routing import Mount
+from starlette.responses import Response
 
 logger = logging.getLogger(__name__)
 server = Server("rag-mcp")
-RESULTS_FILE = Path("/data/results.jsonl")
-RESULTS_FILE.parent.mkdir(exist_ok=True)
+RESULTS_FILE = Path(os.getenv("RESULTS_DIR", "/data")) / "results.jsonl"
+RESULTS_FILE.parent.mkdir(parents=True, exist_ok=True)
 
 
 class JobManager:
     @staticmethod
     def submit_job(query: str, model: str = "all", dataset: str = "tech") -> dict:
-        from .tasks import run_rag_task
+        from src.mcp.tasks import run_rag_task
         from uuid import uuid4
         
         job_id = str(uuid4())
@@ -33,8 +38,7 @@ class JobManager:
     
     @staticmethod
     def check_status(job_id: str) -> dict:
-        from celery.result import AsyncResult
-        from .tasks import celery_app
+        from src.mcp.tasks import celery_app
         
         result = celery_app.backend.get(f"rag:result:{job_id}")
         if result:
@@ -125,7 +129,7 @@ async def list_tools():
 
 
 @server.call_tool()
-async def call_tool(name: str, arguments: dict) -> str:
+async def call_tool(name: str, arguments: dict) -> CallToolResult:
     try:
         if name == "submit_rag_job":
             result = JobManager.submit_job(
@@ -149,8 +153,28 @@ async def call_tool(name: str, arguments: dict) -> str:
         logger.exception("Tool call failed")
         result = {"error": str(e)}
     
-    return json.dumps(result)
+    return CallToolResult(content=[TextContent(type="text", text=json.dumps(result))])
 
+
+sse = SseServerTransport("/mcp/")
+
+
+async def mcp_transport(scope, receive, send):
+    if scope["type"] == "http" and scope["method"] == "GET":
+        async with sse.connect_sse(scope, receive, send) as streams:
+            init_opts = server.create_initialization_options()
+            await server.run(streams[0], streams[1], init_opts)
+    elif scope["type"] == "http" and scope["method"] == "POST":
+        await sse.handle_post_message(scope, receive, send)
+    else:
+        response = Response(status_code=405)
+        await response(scope, receive, send)
+
+
+app = Starlette(routes=[
+    Mount("/mcp/", app=mcp_transport),
+])
 
 if __name__ == "__main__":
-    server.run()
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=5000)
