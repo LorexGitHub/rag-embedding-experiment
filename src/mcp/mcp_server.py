@@ -4,11 +4,11 @@ import logging
 import os
 from datetime import datetime
 from pathlib import Path
+from uuid import uuid4
+
 from mcp.server import Server
 from mcp.server.sse import SseServerTransport
 from mcp.types import CallToolResult, TextContent, Tool
-from starlette.applications import Starlette
-from starlette.routing import Mount
 from starlette.responses import Response
 
 logger = logging.getLogger(__name__)
@@ -21,7 +21,6 @@ class JobManager:
     @staticmethod
     def submit_job(query: str, model: str = "all", dataset: str = "tech") -> dict:
         from src.mcp.tasks import run_rag_task
-        from uuid import uuid4
         
         job_id = str(uuid4())
         task = run_rag_task.delay(job_id, query, model, dataset)
@@ -156,25 +155,28 @@ async def call_tool(name: str, arguments: dict) -> CallToolResult:
     return CallToolResult(content=[TextContent(type="text", text=json.dumps(result))])
 
 
-sse = SseServerTransport("/mcp/")
+sse = SseServerTransport("/mcp/messages/")
 
 
-async def mcp_transport(scope, receive, send):
-    if scope["type"] == "http" and scope["method"] == "GET":
+async def app(scope, receive, send):
+    if scope["type"] != "http":
+        response = Response(status_code=405)
+        await response(scope, receive, send)
+        return
+
+    path = scope["path"]
+    method = scope["method"]
+
+    if path == "/mcp/" and method == "GET":
         async with sse.connect_sse(scope, receive, send) as streams:
             init_opts = server.create_initialization_options()
             await server.run(streams[0], streams[1], init_opts)
-    elif scope["type"] == "http" and scope["method"] == "POST":
+    elif path.startswith("/mcp/messages/") and method == "POST":
         await sse.handle_post_message(scope, receive, send)
     else:
-        response = Response(status_code=405)
+        response = Response(status_code=404)
         await response(scope, receive, send)
-
-
-app = Starlette(routes=[
-    Mount("/mcp/", app=mcp_transport),
-])
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=5000)
+    uvicorn.run(app, host="0.0.0.0", port=5100)

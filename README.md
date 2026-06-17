@@ -1,9 +1,6 @@
 # RAG Embedding Experiment
 
-Benchmark how different embedding models affect retrieval-augmented generation (RAG) output quality.
-coming soon:
-add/test llm to output actual answers with the info
-run on cloud using terraform (hetzner)
+Benchmark how different embedding models affect retrieval-augmented generation (RAG) output quality. Query via the Streamlit dashboard, the FastAPI, or directly from Claude Desktop through an MCP server.
 
 ### The Problem
 
@@ -11,12 +8,17 @@ Different embedding models capture different semantic nuances. A query like _"A 
 
 ### The Solution
 
-A containerized RAG pipeline that runs a query through multiple embedding models, retrieves the top-K documents, generates an answer (via local LLM, OpenAI-compatible API, Ollama, or template fallback), and evaluates the result with Substring Match, ROUGE-L, Semantic Similarity, and LLM quality scoring.
+A containerized RAG pipeline with three access paths:
+
+- **Streamlit UI** — Interactive dashboard for single/comparison/batch runs
+- **FastAPI** — REST + SSE streaming for programmatic access
+- **MCP Server** — Connects to Claude Desktop so you can run RAG queries via natural language
+
+All retrieval runs asynchronously via Celery workers, with results cached in Redis and persisted to disk.
 
 ### Supported Embedding Models
 
 **Fast (< 100M params):**
-
 - **MiniLM-L12** — `sentence-transformers/all-MiniLM-L12-v2` (33M)
 - **BGE-Small** — `BAAI/bge-small-en-v1.5` (33M)
 - **GTE-Small** — `thenlper/gte-small` (33M)
@@ -24,12 +26,10 @@ A containerized RAG pipeline that runs a query through multiple embedding models
 - **Harrier** — `microsoft/harrier-oss-v1-270m` (270M)
 
 **Medium (100–150M params):**
-
 - **BGE-Base** — `BAAI/bge-base-en-v1.5` (110M)
 - **MPNet** — `sentence-transformers/all-mpnet-base-v2` (110M)
 
 **High-quality (300M+ params):**
-
 - **Qwen3** — `Qwen/Qwen3-Embedding-0.6B` (600M)
 - **Jina** — `jinaai/jina-embeddings-v5-text-small` (580M)
 - **BGE-Large** — `BAAI/bge-large-en-v1.5` (335M)
@@ -48,6 +48,10 @@ A containerized RAG pipeline that runs a query through multiple embedding models
 │   │   └── experiment.py # Batch experiment runner
 │   ├── api/
 │   │   └── rag_api.py    # FastAPI with SSE streaming
+│   ├── mcp/
+│   │   ├── mcp_server.py # MCP SSE server (exposes tools over SSE)
+│   │   ├── stdio_server.py # Stdio entry point for Claude Desktop
+│   │   └── tasks.py      # Celery async tasks
 │   └── ui/
 │       └── rag_ui.py     # Streamlit RAG experiment dashboard
 ├── data/
@@ -56,7 +60,7 @@ A containerized RAG pipeline that runs a query through multiple embedding models
 ├── infra/
 │   └── main.tf           # Terraform for Hetzner CX23
 ├── Dockerfile            # Python 3.12, CPU-based torch
-├── docker-compose.yaml   # rag-api + rag-ui services
+├── docker-compose.yaml   # 5 services (redis, rag-api, celery-worker, mcp-sse, rag-ui)
 └── requirements.txt
 ```
 
@@ -65,34 +69,91 @@ A containerized RAG pipeline that runs a query through multiple embedding models
 - **Language**: Python 3.12
 - **API**: FastAPI + Uvicorn with SSE streaming
 - **ML**: Sentence-Transformers, PyTorch (CPU)
-- **Retrieval**: Subprocess isolation (`multiprocessing.spawn`) per model
+- **Retrieval**: Subprocess isolation (`multiprocessing.spawn`) per model, with in-process fallback for Celery workers
+- **Async tasks**: Celery + Redis broker/backend
 - **Frontend**: Streamlit with custom dark theme
+- **MCP**: Model Context Protocol server for Claude Desktop integration
 - **Infrastructure**: Docker Compose (local), Terraform + Hetzner (cloud)
 - **Generator backends**: Local HF, OpenAI-compatible, Ollama, template fallback
 
+### Architecture
+
+```
+                     ┌─────────────────┐
+                     │  Claude Desktop  │
+                     │  (MCP stdio)     │
+                     └────────┬────────┘
+                              │ docker exec -i
+                     ┌────────▼────────┐
+                     │    mcp-sse      │
+                     │  (SSE server)   │
+                     └────────┬────────┘
+                              │ Celery task
+                     ┌────────▼────────┐
+                     │  celery-worker  │
+                     │  (async tasks)  │
+                     │  ┌────────────┐ │
+                     │  │ RAGPipeline│ │
+                     │  └────────────┘ │
+                     └────────┬────────┘
+                              │
+              ┌───────────────┼───────────────┐
+              │               │               │
+     ┌────────▼──────┐ ┌─────▼──────┐ ┌──────▼─────┐
+     │    Redis      │ │  HF Hub    │ │  /data/    │
+     │  (broker +    │ │ (downloads)│ │ (results)  │
+     │   cache)      │ │           │ │            │
+     └───────────────┘ └────────────┘ └────────────┘
+
+  Streamlit UI ──► rag-api ──► (direct RAG, no Celery)
+```
+
 ### Getting Started (Local)
 
-**Prerequisites**: Docker Desktop, Python 3.12+ (optional, for UI outside Docker)
+**Prerequisites**: Docker Desktop
 
 1. Clone and start:
-
-   ```
+   ```bash
    docker compose up --build -d
    ```
 
-2. Open the UI at [http://localhost:8501](http://localhost:8501)
+2. Access the services:
+   | Service        | URL                             |
+   |----------------|---------------------------------|
+   | Streamlit UI   | http://localhost:8766           |
+   | FastAPI        | http://localhost:8765           |
+   | MCP SSE        | http://localhost:5100/mcp/      |
 
-   The API is at port 8002. Both services start automatically.
-
-3. Compare models:
-   - Select a dataset in the sidebar
-   - Choose a sample query or type your own
-   - Run a single model, compare all, or run a batch experiment
-
-4. Stop:
-   ```
+3. Stop:
+   ```bash
    docker compose down
    ```
+
+### Connecting Claude Desktop
+
+Add this to `claude_desktop_config.json` (located at `%LOCALAPPDATA%\Packages\Claude_pzs8sxrjxfjjc\LocalCache\Roaming\Claude\claude_desktop_config.json` on Windows):
+
+```json
+{
+  "mcpServers": {
+    "rag": {
+      "command": "docker",
+      "args": ["exec", "-i", "rag-embedding-experiment-mcp-sse-1", "python", "/app/src/mcp/stdio_server.py"]
+    }
+  }
+}
+```
+
+Restart Claude Desktop — you'll see a hammer icon with 4 tools:
+
+| Tool | Purpose |
+|---|---|
+| `submit_rag_job` | Submit async RAG query (returns job_id) |
+| `check_job_status` | Poll job result by ID |
+| `list_cached_results` | Browse recent results |
+| `get_cached_result` | Fetch specific result by job_id |
+
+Example prompt: *"Submit a RAG job to find which tech company created the iPhone using minilm-l12 on the tech_companies dataset"*
 
 ### Generator Configuration
 
@@ -107,35 +168,32 @@ Generator selection is explicit via environment variables (no auto-detection):
 
 Set these in `docker-compose.yaml` under the `rag-api` service environment.
 
-### API Endpoints
+### API Endpoints (FastAPI)
 
 - `GET /models` — List available embedding models
 - `GET /datasets` — List available datasets
 - `GET /datasets/{name}` — Get categories for a dataset
 - `POST /datasets/{name}` — Update categories
 - `GET /queries` — List evaluation queries
-- `POST /run` — Single-model RAG with SSE streaming (stages: loading → retrieval → generation → evaluation)
+- `POST /run` — Single-model RAG with SSE streaming
 - `POST /compare` — All-model comparison with per-model SSE progress
 - `POST /run-batch` — Batch experiment across 20 queries
 
 ### Cloud Deployment (Hetzner)
 
 1. Set your API token:
-
-   ```
+   ```bash
    export TF_VAR_hcloud_token="your-hcloud-api-token"
    ```
 
 2. Provision:
-
-   ```
+   ```bash
    cd infra
    terraform init
    terraform apply
    ```
 
-   This creates a CX23 (2 vCPU, 4 GB RAM) with Docker + Docker Compose installed via cloud-init. The services start automatically on boot.
-
+   This creates a CX23 (2 vCPU, 4 GB RAM) with Docker + Docker Compose installed via cloud-init.
 
 ### Evaluation Metrics
 

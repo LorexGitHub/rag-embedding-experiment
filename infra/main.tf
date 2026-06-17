@@ -63,6 +63,13 @@ resource "hcloud_firewall" "rag" {
     source_ips = ["0.0.0.0/0", "::/0"]
     port       = "8501"
   }
+
+  rule {
+    direction = "in"
+    protocol  = "tcp"
+    source_ips = ["0.0.0.0/0", "::/0"]
+    port       = "5100"
+  }
 }
 
 resource "hcloud_server" "rag" {
