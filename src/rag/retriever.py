@@ -1,5 +1,4 @@
 import multiprocessing as mp
-import threading
 
 from .config import EMBEDDING_MODELS, RETRIEVAL_TOP_K
 from .schemas import RetrievalResult
