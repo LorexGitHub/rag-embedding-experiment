@@ -83,15 +83,13 @@ def run_rag_task(self, job_id: str, query: str, model: str, dataset: str):
             f.write(json.dumps(output) + "\n")
         
         # Cache in Redis
-        celery_app.backend.set(
-            f"rag:result:{job_id}",
-            json.dumps(output),
-            ex=86400,  # 1 day TTL
-        )
+        import redis
+        r = redis.from_url(redis_url)
+        r.setex(f"rag:result:{job_id}", 86400, json.dumps(output))
         
         return output
     
     except SoftTimeLimitExceeded:
         return {"error": "Task timeout (10 min)", "job_id": job_id}
-    except Exception as e:
-        self.retry(exc=e)
+    except Exception:
+        raise

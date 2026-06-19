@@ -21,6 +21,8 @@ services:
       redis:
         condition: service_healthy
     command: uvicorn src.api.rag_api:app --host 0.0.0.0 --port 8002
+    volumes:
+      - huggingface_cache:/root/.cache/huggingface
 
   celery-worker:
     build: .
@@ -33,6 +35,7 @@ services:
     command: celery -A src.mcp.tasks worker --loglevel=info --concurrency=2
     volumes:
       - ./data:/data
+      - huggingface_cache:/root/.cache/huggingface
 
   mcp-sse:
     build: .
@@ -46,6 +49,7 @@ services:
     command: python -m uvicorn src.mcp.mcp_server:app --host 0.0.0.0 --port 5100
     volumes:
       - ./data:/data
+      - huggingface_cache:/root/.cache/huggingface
 
   nginx:
     image: nginx:alpine
@@ -68,3 +72,4 @@ services:
 
 volumes:
   redis_data:
+  huggingface_cache:
