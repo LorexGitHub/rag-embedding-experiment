@@ -2,6 +2,13 @@
 
 A framework for benchmarking and comparing embedding models in a retrieval-augmented generation (RAG) context. Access results through a Streamlit dashboard, a REST API, or an MCP server for LLM integration.
 
+### Demo
+
+
+https://github.com/user-attachments/assets/93e52b5e-fd6c-4495-9d49-ebdb948d0e4c
+
+
+
 ### The Problem
 
 Choosing an embedding model for a retrieval pipeline involves trade-offs between speed, memory, and retrieval quality. Models vary wildly in capability — from lightweight 33M-parameter models to high-dimensional 600M-parameter ones — and the best choice depends on your specific domain and data. Without a structured comparison, teams rely on intuition rather than empirical evidence.
