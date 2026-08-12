@@ -48,7 +48,7 @@ docker compose up --build -d
 - **Multi-query evaluation**: Run multiple queries across multiple models in a single stream
 - **MCP protocol**: Exposes all RAG tools for Claude Desktop integration
 
-## Frontend Development
+## Frontend
 
 ```bash
 cd frontend
@@ -73,7 +73,7 @@ Opens at `http://localhost:5173` — proxies `/api/*` to `http://localhost:8765`
 | POST | `/api/compare-multi` | Multi-query × multi-model with SSE |
 | POST | `/api/ingest-url` | Fetch URL, chunk, create dataset |
 
-## Batch Experiment CLI (Thesis Runs)
+## Batch Experiment CLI
 
 ```bash
 # Full sweep: all 10 models × 7 datasets × top-k=3,5,10
@@ -91,9 +91,7 @@ Outputs per `top_k` saved to `data/runs/`:
 - `{name}_k{top_k}_aggregate.csv` — mean/std/min/max per model per metric
 - Meta JSON with run configuration
 
-## MCP Tools (Claude Desktop)
-
-Configure in `claude_desktop_config.json`:
+## MCP Tools
 
 ```json
 {
