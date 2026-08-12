@@ -3,11 +3,6 @@
 
 Evaluate and compare embedding models for retrieval-augmented generation across 10 metrics (4 retrieval + 6 generation). Results are accessible via a React dashboard, REST API, or an MCP server for LLM tool integration.
 
-## Architecture
-<img width="1993" height="924" alt="image" src="https://github.com/user-attachments/assets/26c4f157-dfc1-4e9a-9c91-98bcd7634745" />
-
-
-
 ## Quick Start
 
 ```bash
